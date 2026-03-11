@@ -685,7 +685,7 @@ class EwasteCalculator:
     Returns: Estimated carbon waste in kg CO2e
     """
 
-    DEFAULT_PUE = 1.1   # Hyperscaler average PUE (Google: 1.10, AWS: ~1.135)
+    DEFAULT_PUE = 1.5   # Hyperscaler average PUE (Google: 1.10, AWS: ~1.135)
 
     def calculate(
         self,
