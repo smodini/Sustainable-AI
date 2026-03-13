@@ -1,0 +1,8 @@
+google-cloud-recommender
+google-cloud-asset
+google-cloud-monitoring
+boto3
+azure-identity
+azure-mgmt-advisor
+azure-mgmt-compute
+azure-mgmt-monitor
