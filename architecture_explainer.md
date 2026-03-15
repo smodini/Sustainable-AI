@@ -178,5 +178,3 @@ change the detection approach at all. The scope boundary is clean.
 > The cloud already knows which VMs are idle. Article 4's code asks for that answer first,
 > adds the carbon cost and owner accountability layer on top, and only falls back to doing
 > the detection itself when the native API has no data.
-
-To justify the autonomous deprovisioning of assets, the framework utilizes a proprietary Electronic Waste & Idle Energy Formula ($E_{waste}$). This formula allows the controller to calculate the precise environmental cost of "Zombie" resources before triggering a termination command.The Formula:$$E_{waste} = \sum_{i=1}^{n} (P_{idle, i} \times T_{zombie, i} \times CI_{region})$$Where:$n$: The total number of identified orphaned resources (VMs, Disks, IPs).$P_{idle, i}$: The baseline power consumption (in kW) of resource $i$ while in an idle/unattached state.$T_{zombie, i}$: The duration (in hours) the resource has remained unutilized past the threshold.$CI_{region}$: The real-time Carbon Intensity (gCO2/kWh) of the specific cloud region where the resource resides.
