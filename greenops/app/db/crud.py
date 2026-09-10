@@ -33,6 +33,7 @@ def save_scan(db: Session, scan_result: dict) -> ScanRun:
         db.add(finding)
 
     db.commit()
+    db.refresh(scan)
     return scan
 
 

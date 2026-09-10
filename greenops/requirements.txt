@@ -4,3 +4,11 @@ boto3
 pydantic
 python-dotenv
 pytest
+sqlalchemy
+psycopg2-binary
+alembic
+streamlit
+pandas
+google-cloud-compute
+google-cloud-monitoring
+google-cloud-asset

@@ -1,3 +1,6 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 
@@ -5,6 +8,7 @@ from app.db.database import engine, get_db
 from app.db import models
 from app.db.crud import save_scan, get_findings, get_scan_history
 from app.providers.aws.scanner import scan_aws
+from app.providers.gcp.scanner import scan_gcp
 
 models.Base.metadata.create_all(bind=engine)
 
@@ -19,6 +23,13 @@ def health():
 @app.get("/api/v1/aws/scan")
 def aws_scan(db: Session = Depends(get_db)):
     result = scan_aws()
+    save_scan(db, result)
+    return result
+
+
+@app.get("/api/v1/gcp/scan")
+def gcp_scan(db: Session = Depends(get_db)):
+    result = scan_gcp()
     save_scan(db, result)
     return result
 
