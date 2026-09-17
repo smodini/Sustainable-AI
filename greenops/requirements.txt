@@ -12,3 +12,7 @@ pandas
 google-cloud-compute
 google-cloud-monitoring
 google-cloud-asset
+azure-identity
+azure-mgmt-compute
+azure-mgmt-monitor
+azure-mgmt-resource
