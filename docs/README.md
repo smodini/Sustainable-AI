@@ -207,18 +207,18 @@ See [BUILD_STEPS.md](./BUILD_STEPS.md) for the detailed step-by-step build log.
 
 | Milestone | Status |
 |---|---|
-| M1 FastAPI + /health | ⬜ |
-| M2 Energy formula | ⬜ |
-| M3 Idle policy engine | ⬜ |
-| M4 AWS EC2 inventory | ⬜ |
-| M5 AWS CloudWatch metrics | ⬜ |
-| M6 AWS idle scanner | ⬜ |
-| M7 Energy integration | ⬜ |
-| M8 PostgreSQL | ⬜ |
-| M9 Streamlit dashboard | ⬜ |
-| M10 Azure provider | ⬜ |
-| M11 GCP provider | ⬜ |
-| M12 Unified scanner | ⬜ |
+| M1 FastAPI + /health | ✅ |
+| M2 Energy formula | ✅ |
+| M3 Idle policy engine | ✅ |
+| M4 AWS EC2 inventory | ✅ |
+| M5 AWS CloudWatch metrics | ✅ |
+| M6 AWS idle scanner | ✅ |
+| M7 Energy integration | ✅ |
+| M8 PostgreSQL | ✅ |
+| M9 Streamlit dashboard | ✅ |
+| M10 Azure provider | ✅ |
+| M11 GCP provider | ✅ |
+| M12 Unified scanner | ✅ |
 | M13 Storage hygiene | ⬜ |
 | M14 Recommendations | ⬜ |
 | M15 Remediation engine | ⬜ |

@@ -645,18 +645,18 @@ REMEDIATION_ENABLED=false
 
 | Milestone | Status |
 |---|---|
-| M1 FastAPI + /health | ⬜ Not started |
-| M2 Energy formula | ⬜ Not started |
-| M3 Idle policy engine | ⬜ Not started |
-| M4 AWS EC2 inventory | ⬜ Not started |
-| M5 AWS CloudWatch metrics | ⬜ Not started |
-| M6 AWS idle scanner | ⬜ Not started |
-| M7 Energy integration | ⬜ Not started |
-| M8 PostgreSQL | ⬜ Not started |
-| M9 Streamlit dashboard | ⬜ Not started |
-| M10 Azure provider | ⬜ Not started |
-| M11 GCP provider | ⬜ Not started |
-| M12 Unified scanner | ⬜ Not started |
+| M1 FastAPI + /health | ✅ Done |
+| M2 Energy formula | ✅ Done |
+| M3 Idle policy engine | ✅ Done |
+| M4 AWS EC2 inventory | ✅ Done |
+| M5 AWS CloudWatch metrics | ✅ Done |
+| M6 AWS idle scanner | ✅ Done |
+| M7 Energy integration | ✅ Done |
+| M8 PostgreSQL | ✅ Done |
+| M9 Streamlit dashboard | ✅ Done |
+| M10 Azure provider | ✅ Done |
+| M11 GCP provider | ✅ Done |
+| M12 Unified scanner | ✅ Done |
 | M13 Storage hygiene | ⬜ Not started |
 | M14 Recommendations | ⬜ Not started |
 | M15 Remediation engine | ⬜ Not started |
