@@ -15,6 +15,20 @@ def utc_now() -> dt.datetime:
     return dt.datetime.now(dt.timezone.utc)
 
 
+def parse_ts(value: Optional[str]) -> Optional[dt.datetime]:
+    """ISO-8601 -> timezone-aware UTC datetime. A naive timestamp is assumed to be UTC.
+
+    Provider payloads occasionally omit the offset; comparing a naive value with the
+    aware observation window would raise TypeError and abort the scan.
+    """
+    if not value:
+        return None
+    parsed = dt.datetime.fromisoformat(value)
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=dt.timezone.utc)
+    return parsed.astimezone(dt.timezone.utc)
+
+
 def observation_window(
     days: int, now: Optional[dt.datetime] = None
 ) -> tuple[dt.datetime, dt.datetime]:

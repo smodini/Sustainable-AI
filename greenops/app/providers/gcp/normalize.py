@@ -22,7 +22,7 @@ from app.models.idleness import (
     ResourceKind,
     Telemetry,
 )
-from app.providers.common import build_telemetry
+from app.providers.common import build_telemetry, parse_ts
 
 GCP_VM_METRICS = (
     "compute.googleapis.com/instance/cpu/utilization",
@@ -47,8 +47,7 @@ def _region_from_zone(zone_url: str) -> str:
     return zone.rsplit("-", 1)[0]
 
 
-def _parse_ts(value: Optional[str]) -> Optional[dt.datetime]:
-    return dt.datetime.fromisoformat(value) if value else None
+_parse_ts = parse_ts
 
 
 def normalize_instance(raw: dict[str, Any], project: str) -> ResourceIdentity:

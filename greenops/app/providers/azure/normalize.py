@@ -22,7 +22,7 @@ from app.models.idleness import (
     ResourceKind,
     Telemetry,
 )
-from app.providers.common import build_telemetry
+from app.providers.common import build_telemetry, parse_ts
 
 AZURE_VM_METRICS = ("Percentage CPU", "Network In Total", "Network Out Total")
 
@@ -40,8 +40,7 @@ def subscription_from_id(arm_id: str) -> str:
     return parts[1] if len(parts) > 1 and parts[0].lower() == "subscriptions" else ""
 
 
-def _parse_ts(value: Optional[str]) -> Optional[dt.datetime]:
-    return dt.datetime.fromisoformat(value) if value else None
+_parse_ts = parse_ts
 
 
 def _power_state(vm: dict[str, Any]) -> str:
