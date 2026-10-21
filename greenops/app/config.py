@@ -64,6 +64,21 @@ class EscalationPolicy(BaseModel):
     snapshot_retention_days: int = Field(default=7, ge=0)
 
 
+class CarbonPolicy(BaseModel):
+    """Policy for the orchestration layer that decides whether to notify, scale down,
+    migrate, or stop a wasteful workload.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    notify_kg_co2e_monthly: float = Field(default=20.0, gt=0)
+    scale_down_kg_co2e_monthly: float = Field(default=50.0, gt=0)
+    migrate_kg_co2e_monthly: float = Field(default=100.0, gt=0)
+    stop_kg_co2e_monthly: float = Field(default=200.0, gt=0)
+    high_carbon_intensity_gco2_kwh: float = Field(default=450.0, gt=0)
+    preferred_regions: tuple[str, ...] = ("us-east1", "europe-west1", "us-central1")
+
+
 def load_policies(env: dict[str, str] | None = None) -> tuple[IdlePolicy, EnergyPolicy]:
     env = dict(os.environ) if env is None else env
 
@@ -95,4 +110,39 @@ def load_policies(env: dict[str, str] | None = None) -> tuple[IdlePolicy, Energy
     return IdlePolicy(**idle_kwargs), EnergyPolicy(**energy_kwargs)
 
 
+def load_carbon_policy(env: dict[str, str] | None = None) -> CarbonPolicy:
+    env = dict(os.environ) if env is None else env
+
+    kwargs: dict[str, object] = {}
+    if "GREENOPS_CARBON_NOTIFY_KG_MONTHLY" in env:
+        kwargs["notify_kg_co2e_monthly"] = float(env["GREENOPS_CARBON_NOTIFY_KG_MONTHLY"])
+    if "GREENOPS_CARBON_SCALE_DOWN_KG_MONTHLY" in env:
+        kwargs["scale_down_kg_co2e_monthly"] = float(env["GREENOPS_CARBON_SCALE_DOWN_KG_MONTHLY"])
+    if "GREENOPS_CARBON_MIGRATE_KG_MONTHLY" in env:
+        kwargs["migrate_kg_co2e_monthly"] = float(env["GREENOPS_CARBON_MIGRATE_KG_MONTHLY"])
+    if "GREENOPS_CARBON_STOP_KG_MONTHLY" in env:
+        kwargs["stop_kg_co2e_monthly"] = float(env["GREENOPS_CARBON_STOP_KG_MONTHLY"])
+    if "GREENOPS_CARBON_INTENSITY_GCO2_KWH" in env:
+        kwargs["high_carbon_intensity_gco2_kwh"] = float(env["GREENOPS_CARBON_INTENSITY_GCO2_KWH"])
+    if "GREENOPS_CARBON_PREFERRED_REGIONS" in env:
+        kwargs["preferred_regions"] = tuple(
+            region.strip() for region in env["GREENOPS_CARBON_PREFERRED_REGIONS"].split(",") if region.strip()
+        )
+    return CarbonPolicy(**kwargs)
+
+
 idle_policy, energy_policy = load_policies()
+carbon_policy = load_carbon_policy()
+
+
+__all__ = [
+    "CarbonPolicy",
+    "EnergyPolicy",
+    "EscalationPolicy",
+    "IdlePolicy",
+    "carbon_policy",
+    "energy_policy",
+    "idle_policy",
+    "load_carbon_policy",
+    "load_policies",
+]
