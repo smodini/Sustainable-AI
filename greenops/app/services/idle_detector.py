@@ -33,11 +33,10 @@ from app.services.energy_calculator import compute_energy
 
 
 def find_exemption(tags: dict[str, str], policy: IdlePolicy = idle_policy) -> Exemption:
-    """Case-insensitive match of any configured exemption key with a truthy value."""
-    wanted = {k.lower() for k in policy.exemption_tag_keys}
-    truthy = {v.lower() for v in policy.exemption_true_values}
+    """Case-insensitive match of any configured (key, value) exemption tag."""
+    wanted = {(k.strip().lower(), v.strip().lower()) for k, v in policy.exemption_tags}
     for key, value in tags.items():
-        if key.lower() in wanted and str(value).strip().lower() in truthy:
+        if (key.strip().lower(), str(value).strip().lower()) in wanted:
             return Exemption(exempt=True, tag_key=key, tag_value=str(value))
     return Exemption()
 

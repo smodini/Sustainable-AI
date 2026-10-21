@@ -36,14 +36,32 @@ class IdlePolicy(BaseModel):
 
     cpu_threshold_pct: float = Field(default=5.0, gt=0, le=100)
     network_threshold_mb_day: float = Field(default=5.0, gt=0)
-    observation_days: int = Field(default=7, ge=1, le=14)  # CloudWatch 1-min data lives 15 days
+    # Article: 14-day rolling window. Hourly datapoints (period 3600) are retained far
+    # longer than 14 days on all three providers, so the cap is a policy limit, not an API one.
+    observation_days: int = Field(default=14, ge=1, le=14)
     # Minimum fraction of expected datapoints before a verdict is trusted. Below this the
     # resource is UNKNOWN, never IDLE.
     min_coverage: float = Field(default=0.80, gt=0, le=1)
-    # User-defined exemption tags: a resource carrying any of these keys with a truthy
-    # value is EXEMPT at every stage. Key/value matching is case-insensitive.
-    exemption_tag_keys: tuple[str, ...] = ("greenops-ignore",)
-    exemption_true_values: tuple[str, ...] = ("true", "yes", "1")
+    # User-defined exemption tags as (key, value) pairs: a resource carrying any pair is
+    # EXEMPT at every escalation stage. Matching is case-insensitive and ignores
+    # surrounding whitespace. Default is the article's override tag.
+    exemption_tags: tuple[tuple[str, str], ...] = (("hygiene-status", "exempt-from-hygiene"),)
+
+
+class EscalationPolicy(BaseModel):
+    """14-day graduated escalation (article, section vi). Consumed by the enforcement layer.
+
+    Days are counted from the first IDLE/ORPHANED verdict. An exemption tag cancels the
+    sequence at any stage.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    notice_day: int = Field(default=0, ge=0)  # informational alert to owner
+    warning_day: int = Field(default=3, ge=0)  # warning: resource will be stopped
+    stop_snapshot_day: int = Field(default=7, ge=0)  # resource stopped, snapshot preserved
+    delete_day: int = Field(default=14, ge=0)  # resource and snapshot deleted
+    snapshot_retention_days: int = Field(default=7, ge=0)
 
 
 def load_policies(env: dict[str, str] | None = None) -> tuple[IdlePolicy, EnergyPolicy]:
@@ -58,10 +76,15 @@ def load_policies(env: dict[str, str] | None = None) -> tuple[IdlePolicy, Energy
         idle_kwargs["observation_days"] = int(env["GREENOPS_OBSERVATION_DAYS"])
     if "GREENOPS_MIN_COVERAGE" in env:
         idle_kwargs["min_coverage"] = float(env["GREENOPS_MIN_COVERAGE"])
-    if "GREENOPS_EXEMPTION_TAG_KEYS" in env:
-        idle_kwargs["exemption_tag_keys"] = tuple(
-            k.strip() for k in env["GREENOPS_EXEMPTION_TAG_KEYS"].split(",") if k.strip()
-        )
+    if "GREENOPS_EXEMPTION_TAGS" in env:  # "key=value,key2=value2"
+        pairs = []
+        for item in env["GREENOPS_EXEMPTION_TAGS"].split(","):
+            key, sep, value = item.partition("=")
+            if item.strip() and (not sep or not key.strip() or not value.strip()):
+                raise ValueError(f"GREENOPS_EXEMPTION_TAGS entry {item!r} must be key=value")
+            if sep:
+                pairs.append((key.strip(), value.strip()))
+        idle_kwargs["exemption_tags"] = tuple(pairs)
 
     energy_kwargs: dict[str, object] = {}
     if "GREENOPS_PUE" in env:

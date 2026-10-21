@@ -87,7 +87,7 @@ Example:
 │                                                                      │
 │   Signal 1 — CPU max < 5% over observation window                   │
 │   Signal 2 — Network < 5 MB/day                                     │
-│   Signal 3 — Tag exemptions  (greenops-ignore=true)                 │
+│   Signal 3 — Tag exemptions  (hygiene-status=exempt-from-hygiene) │
 │   Signal 4 — Orphaned storage (unattached disks)                    │
 │                                                                      │
 │   Verdict:  ACTIVE | IDLE | ZOMBIE | EXEMPT                         │
@@ -243,7 +243,7 @@ provider-specific field names.
 | cpu_maximum | float | % peak over observation window |
 | network_in_mb | float | MB received over observation window |
 | network_out_mb | float | MB sent over observation window |
-| observation_days | int | default 7 |
+| observation_days | int | default 14 (rolling window) |
 | idle | bool | verdict from idle_detector |
 | idle_hours | float | estimated hours idle |
 | energy_waste_kwh | float | E_waste = P_idle × PUE × idle_hours |
@@ -257,7 +257,7 @@ provider-specific field names.
 Input: cpu_maximum, network_mb_per_day, tags, resource_type
 
 Step 1 — Tag exemption
-  tag "greenops-ignore" = "true"  →  EXEMPT (skip everything)
+  tag "hygiene-status" = "exempt-from-hygiene"  →  EXEMPT (skip everything)
 
 Step 2 — Orphaned storage
   resource_type = DISK and not attached  →  ZOMBIE
@@ -278,8 +278,16 @@ No source code changes needed to adjust sensitivity.
 
 ## 7. Risk Classification
 
-| Idle Duration | Risk | Recommended Action |
+| Day | Stage | Action |
 |---|---|---|
+| 0 | NOTICE | Informational alert to resource owner |
+| 3 | WARNING | Resource will be stopped in 4 days |
+| 7 | STOP / SNAPSHOT | Resource stopped; snapshot preserved for 7 days |
+| 14 | DELETE | Resource and snapshot deleted |
+
+Days count from the first IDLE/ORPHANED verdict. Source: `EscalationPolicy` in `app/config.py`.
+
+---|---|---|
 | < 2 days | LOW | Monitor |
 | 2–6 days | MEDIUM | Notify owner |
 | 7–13 days | HIGH | Warning + stop recommendation |
@@ -311,7 +319,7 @@ Result logged  (audit trail in remediation_actions table)
 Safety controls:
 - `REMEDIATION_ENABLED=false` in `.env` → dry-run only, zero destructive actions
 - Snapshot always taken before stop or delete
-- Tag `greenops-ignore=true` exempts any resource at any stage
+- Tag `hygiene-status: exempt-from-hygiene` exempts any resource at any stage
 
 ---
 

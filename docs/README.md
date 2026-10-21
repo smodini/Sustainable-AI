@@ -183,8 +183,16 @@ OBSERVATION_DAYS=7
 
 ## Risk Levels
 
-| Idle Duration | Risk | Action |
+| Day | Stage | Action |
 |---|---|---|
+| 0 | NOTICE | Informational alert to resource owner |
+| 3 | WARNING | Resource will be stopped in 4 days |
+| 7 | STOP / SNAPSHOT | Resource stopped; snapshot preserved for 7 days |
+| 14 | DELETE | Resource and snapshot deleted |
+
+Days count from the first IDLE/ORPHANED verdict. Source: `EscalationPolicy` in `app/config.py`.
+
+---|---|---|
 | < 2 days | LOW | Monitor |
 | 2–6 days | MEDIUM | Notify owner |
 | 7–13 days | HIGH | Stop recommendation |
@@ -196,7 +204,7 @@ OBSERVATION_DAYS=7
 
 - `REMEDIATION_ENABLED=false` in `.env` → dry-run mode, no destructive actions
 - Snapshot always taken before stop or delete
-- Tag `greenops-ignore=true` on any resource to exempt it permanently
+- Tag `hygiene-status: exempt-from-hygiene` on any resource to exempt it at every escalation stage (configurable via `GREENOPS_EXEMPTION_TAGS=key=value,...`)
 - Full approval workflow before any action executes
 
 ---
