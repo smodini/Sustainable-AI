@@ -1,6 +1,6 @@
-from typing import Optional
+from typing import Any
 
-from fastapi import Depends, FastAPI, Query
+from fastapi import FastAPI, Query
 from sqlalchemy.orm import Session
 
 from app.db import models
@@ -8,6 +8,7 @@ from app.db.crud import get_findings, get_scan_history, save_scan
 from app.db.database import engine, get_db
 from app.models.idleness import IdleState
 from app.providers.aws.scanner import scan_aws
+from app.services.carbon_orchestrator import CarbonDecisionInput, plan_orchestration
 
 # POC convenience; replace with Alembic migrations before production.
 models.Base.metadata.create_all(bind=engine)
@@ -30,7 +31,7 @@ def aws_scan(db: Session = Depends(get_db)):
 
 @app.get("/api/v1/findings")
 def findings(
-    state: Optional[list[IdleState]] = Query(default=None),
+    state: list[IdleState] | None = Query(default=None),
     idle_only: bool = False,
     db: Session = Depends(get_db),
 ):
@@ -78,3 +79,40 @@ def scan_history(db: Session = Depends(get_db)):
         }
         for r in rows
     ]
+
+
+@app.post("/api/v1/orchestration/plan")
+def orchestration_plan(payload: list[dict[str, Any]] | dict[str, Any]):
+    """Return orchestration decisions for a list of wasteful resources.
+
+    Example payload:
+    [{
+        "name": "api-prod-01",
+        "region": "us-east-1",
+        "carbon_intensity_gco2_kwh": 420,
+        "e_waste_kwh_monthly": 108,
+        "exempt": false
+    }]
+    """
+    resources = payload if isinstance(payload, list) else [payload]
+    decisions = plan_orchestration(resources)
+    return [decision.model_dump(mode="json") for decision in decisions]
+
+
+@app.post("/api/v1/orchestration/plan/from-findings")
+def orchestration_plan_from_findings(payload: list[dict[str, Any]] | dict[str, Any]):
+    """Convenience endpoint that accepts GreenOps findings records."""
+    resources = payload if isinstance(payload, list) else [payload]
+    normalized = []
+    for record in resources:
+        normalized.append(
+            CarbonDecisionInput(
+                name=record.get("name") or record.get("resource_id") or "unknown-resource",
+                region=record.get("region"),
+                carbon_intensity_gco2_kwh=record.get("carbon_intensity_gco2_kwh", 0.0),
+                e_waste_kwh_monthly=record.get("e_waste_kwh_monthly") or record.get("monthly_waste_kwh"),
+                exempt=bool(record.get("exempt") or record.get("is_exempt")),
+            )
+        )
+    decisions = plan_orchestration(normalized)
+    return [decision.model_dump(mode="json") for decision in decisions]
