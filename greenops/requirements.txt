@@ -1,6 +1,9 @@
-fastapi
-uvicorn
-boto3
-pydantic
-python-dotenv
-pytest
+# Python >= 3.12 (StrEnum, PEP 701)
+fastapi>=0.110
+uvicorn>=0.29
+pydantic>=2.6
+sqlalchemy>=2.0
+psycopg2-binary>=2.9
+boto3>=1.34
+python-dotenv>=1.0
+pytest>=8.0
