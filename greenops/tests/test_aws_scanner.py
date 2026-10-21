@@ -6,7 +6,7 @@ from app.providers.aws.metrics import INSTANCES_PER_CALL, fetch_ec2_telemetry
 from app.providers.aws.scanner import scan_aws
 from tests.conftest_helpers import NOW, OLD, WINDOW_END, WINDOW_START
 
-HOURS = 168  # 7 days, hourly buckets
+HOURS = IdlePolicy().observation_days * 24  # default 14-day window, hourly buckets
 
 
 def instance(iid, state="running", tags=None, launch=OLD):
@@ -66,7 +66,7 @@ def run(ec2, cw, **kw):
 def test_end_to_end_mixed_estate():
     ec2 = FakeEC2(
         instances=[instance("i-idle"), instance("i-busy"), instance("i-nodata"), instance("i-off", "stopped"),
-                   instance("i-exempt", tags={"greenops-ignore": "true"})],
+                   instance("i-exempt", tags={"hygiene-status": "exempt-from-hygiene"})],
         volumes=[{"VolumeId": "vol-1", "State": "available", "Attachments": [], "Size": 50, "VolumeType": "gp3"}])
     cw = FakeCW({"i-idle": idle_series(), "i-busy": busy_series(), "i-exempt": idle_series()})
     s = run(ec2, cw)
@@ -83,7 +83,7 @@ def test_end_to_end_mixed_estate():
 
 
 def test_exempt_and_stopped_instances_are_never_queried():
-    ec2 = FakeEC2(instances=[instance("i-idle"), instance("i-off", "stopped"), instance("i-exempt", tags={"greenops-ignore": "true"})])
+    ec2 = FakeEC2(instances=[instance("i-idle"), instance("i-off", "stopped"), instance("i-exempt", tags={"hygiene-status": "exempt-from-hygiene"})])
     cw = FakeCW({"i-idle": idle_series()})
     run(ec2, cw)
     queried = {q["MetricStat"]["Metric"]["Dimensions"][0]["Value"] for c in cw.calls for q in c["MetricDataQueries"]}
@@ -97,8 +97,8 @@ def test_network_is_summed_across_all_datapoints_and_paginated():
     p, q = paged.records[0].telemetry, plain.records[0].telemetry
     assert p.network_mb_per_day == q.network_mb_per_day
     assert p.coverage == q.coverage == 1.0
-    # 168 h x (1000 in + 1000 out) bytes over 7 days
-    assert abs(q.network_mb_per_day - (168 * 2000 / 1048576 / 7)) < 1e-3
+    # HOURS x (1000 in + 1000 out) bytes over the observation window
+    assert abs(q.network_mb_per_day - (HOURS * 2000 / 1048576 / (HOURS / 24))) < 1e-3
 
 
 def test_batching_respects_500_query_limit():

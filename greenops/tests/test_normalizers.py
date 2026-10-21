@@ -68,7 +68,7 @@ def test_vm_power_states_converge():
 
 def test_azure_vm_expand_instance_view_form_and_subscription():
     vm = az_vm({"id": f"{SUB}/resourceGroups/rg/providers/Microsoft.Compute/virtualMachines/VM1", "name": "VM1",
-                "location": "westus2", "tags": {"greenops-ignore": "true"},
+                "location": "westus2", "tags": {"hygiene-status": "exempt-from-hygiene"},
                 "properties": {"instanceView": {"statuses": [{"code": "ProvisioningState/succeeded"}, {"code": "PowerState/running"}]}}})
     assert vm.lifecycle is LifecycleState.RUNNING
     assert vm.account_id == "11111111-2222-3333-4444-555555555555"

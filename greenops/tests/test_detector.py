@@ -41,23 +41,29 @@ def test_low_coverage_is_unknown():
 
 
 def test_exemption_tag_wins_even_without_telemetry_case_insensitive():
-    for tags in ({"greenops-ignore": "true"}, {"GreenOps-Ignore": "TRUE"}, {"greenops-ignore": " yes "}):
+    for tags in (
+        {"hygiene-status": "exempt-from-hygiene"},
+        {"Hygiene-Status": "EXEMPT-FROM-HYGIENE"},
+        {"hygiene-status": " exempt-from-hygiene "},
+    ):
         r = classify(vm(tags=tags), None, NOW)
         assert r.state is IdleState.EXEMPT and r.exemption.exempt and r.energy is None
     # exempt even though it would otherwise be flagged orphaned
-    assert classify(disk(tags={"greenops-ignore": "true"}), None, NOW).state is IdleState.EXEMPT
+    assert classify(disk(tags={"hygiene-status": "exempt-from-hygiene"}), None, NOW).state is IdleState.EXEMPT
 
 
-def test_falsey_exemption_value_does_not_exempt():
-    assert not find_exemption({"greenops-ignore": "false"}).exempt
-    assert classify(vm(tags={"greenops-ignore": "false"}), tel(), NOW).state is IdleState.IDLE
+def test_other_exemption_value_does_not_exempt():
+    assert not find_exemption({"hygiene-status": "active"}).exempt
+    assert not find_exemption({"greenops-ignore": "true"}).exempt  # legacy tag no longer default
+    assert classify(vm(tags={"hygiene-status": "active"}), tel(), NOW).state is IdleState.IDLE
 
 
-def test_user_defined_exemption_keys():
-    policy = IdlePolicy(exemption_tag_keys=("keep-alive", "team-protected"))
+def test_user_defined_exemption_tags():
+    policy = IdlePolicy(exemption_tags=(("keep-alive", "true"), ("team", "protected")))
     assert classify(vm(tags={"keep-alive": "true"}), tel(), NOW, policy).state is IdleState.EXEMPT
-    # default key no longer applies once overridden
-    assert classify(vm(tags={"greenops-ignore": "true"}), tel(), NOW, policy).state is IdleState.IDLE
+    assert classify(vm(tags={"team": "protected"}), tel(), NOW, policy).state is IdleState.EXEMPT
+    # default tag no longer applies once overridden
+    assert classify(vm(tags={"hygiene-status": "exempt-from-hygiene"}), tel(), NOW, policy).state is IdleState.IDLE
 
 
 def test_stopped_vm_and_transitional_vm():
