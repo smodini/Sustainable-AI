@@ -1,13 +1,19 @@
+import os
 from typing import Any
 
 from fastapi import Depends, FastAPI, HTTPException, Query
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from app.db import models
 from app.db.crud import get_findings, get_scan_history, save_scan
 from app.db.database import engine, get_db
 from app.models.idleness import IdleState
+from app.orchestration.controller import PlacementController
+from app.orchestration.models import FlexibleWorkload, IntensityPoint
+from app.orchestration.watttime import WattTimeProvider, get_rest_client as watttime_rest_client
 from app.providers.aws.scanner import scan_aws
+from app.providers.common import utc_now
 from app.providers.azure.scanner import scan_azure
 from app.providers.gcp.scanner import scan_gcp
 from app.services.carbon_orchestrator import CarbonDecisionInput, plan_orchestration
@@ -143,3 +149,43 @@ def orchestration_plan_from_findings(payload: list[dict[str, Any]] | dict[str, A
         )
     decisions = plan_orchestration(normalized)
     return [decision.model_dump(mode="json") for decision in decisions]
+
+
+# ---- carbon-aware placement (closed loop) --------------------------------------------------
+# One long-lived controller so the feedback state (forecast error per region, current plans)
+# survives between requests. State is in memory: it is lost on restart (persisting it is a
+# follow-up), and it assumes a single API process.
+_controller: PlacementController | None = None
+
+
+def get_controller() -> PlacementController:
+    global _controller
+    if _controller is None:
+        user, password = os.getenv("WATTTIME_USERNAME"), os.getenv("WATTTIME_PASSWORD")
+        if not (user and password):
+            raise HTTPException(status_code=503, detail="set WATTTIME_USERNAME and WATTTIME_PASSWORD")
+        _controller = PlacementController(WattTimeProvider(watttime_rest_client(user, password)))
+    return _controller
+
+
+class ObserveRequest(BaseModel):
+    power_kw: float = Field(gt=0)
+    actual: list[IntensityPoint]  # realized hourly intensity covering the whole run
+
+
+@app.post("/api/v1/orchestration/placements")
+def orchestration_placements(workloads: list[FlexibleWorkload]):
+    """Plan or re-plan flexible workloads into the lowest-carbon region and window."""
+    placements = get_controller().reconcile(workloads, utc_now())
+    return [p.model_dump(mode="json") for p in placements]
+
+
+@app.post("/api/v1/orchestration/placements/{name}/observe")
+def orchestration_observe(name: str, body: ObserveRequest):
+    """Close the loop: report realized intensity so forecast error feeds future placement."""
+    try:
+        return get_controller().observe(name, body.actual, body.power_kw).model_dump(mode="json")
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
