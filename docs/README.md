@@ -1,8 +1,8 @@
 # GreenOps — Multi-Cloud Energy Waste Detection Platform
 
-**Authors:** Sai Kalyan Kumar Modini, Sai Kiran Chary Kannyakanti
+**Authors:** Sai Kalyan Kumar Modini, Sai Kiran Chary Kannyakanti, Sai Vijay Nookala
 **Patent Reference:** Sustainable AI / GreenOps Patent Specification
-**Status:** POC — Phase 1 (AWS)
+**Status:** POC — Phase
 
 ---
 
