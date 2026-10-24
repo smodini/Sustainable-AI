@@ -1,6 +1,6 @@
 from typing import Any
 
-from fastapi import FastAPI, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.db import models
@@ -8,6 +8,8 @@ from app.db.crud import get_findings, get_scan_history, save_scan
 from app.db.database import engine, get_db
 from app.models.idleness import IdleState
 from app.providers.aws.scanner import scan_aws
+from app.providers.azure.scanner import scan_azure
+from app.providers.gcp.scanner import scan_gcp
 from app.services.carbon_orchestrator import CarbonDecisionInput, plan_orchestration
 
 # POC convenience; replace with Alembic migrations before production.
@@ -27,6 +29,31 @@ def aws_scan(db: Session = Depends(get_db)):
     summary = scan_aws()
     save_scan(db, summary)
     return summary.model_dump(mode="json")
+
+
+def _run_scan(scan, db: Session):
+    """Run a provider scan, persist it, return the Idleness Schema payload.
+
+    A missing project/subscription configuration is a client-visible 400, not a 500.
+    """
+    try:
+        summary = scan()
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    save_scan(db, summary)
+    return summary.model_dump(mode="json")
+
+
+@app.get("/api/v1/gcp/scan")
+def gcp_scan(db: Session = Depends(get_db)):
+    """Scan the projects in GREENOPS_GCP_PROJECTS (Compute + Cloud Monitoring)."""
+    return _run_scan(scan_gcp, db)
+
+
+@app.get("/api/v1/azure/scan")
+def azure_scan(db: Session = Depends(get_db)):
+    """Scan the subscriptions in GREENOPS_AZURE_SUBSCRIPTIONS (ARM + Azure Monitor)."""
+    return _run_scan(scan_azure, db)
 
 
 @app.get("/api/v1/findings")

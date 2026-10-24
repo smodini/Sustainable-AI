@@ -27,7 +27,7 @@ def test_notify_owner_for_moderate_carbon_burden():
         [{
             "name": "analytics-01",
             "region": "us-east-1",
-            "carbon_intensity_gco2_kwh": 500,
+            "carbon_intensity_gco2_kwh": 400,
             "e_waste_kwh_monthly": 30,
         }],
         policy=policy,
